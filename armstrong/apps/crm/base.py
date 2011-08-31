@@ -148,12 +148,7 @@ def connect_post_delete(*models):
     connect_signals(post_delete, dispatch_delete_signal, *models)
 
 
-def activate():
-    from django.contrib.auth.models import Group
-    from django.contrib.auth.models import User
-    connect_post_save(User, Group)
-    connect_post_delete(User, Group)
-
+def attempt_django_registration():
     try:
         from registration.signals import user_activated
         from registration.signals import user_registered
@@ -161,3 +156,12 @@ def activate():
         user_registered.connect(dispatch_user_registered)
     except ImportError:
         pass
+
+
+def activate():
+    from django.contrib.auth.models import Group
+    from django.contrib.auth.models import User
+    connect_post_save(User, Group)
+    connect_post_delete(User, Group)
+
+    attempt_django_registration()
