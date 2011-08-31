@@ -169,71 +169,18 @@ class BackendTestCase(TestCase):
                 msg="sanity check to make sure subclasses don't bleed through")
 
 
-def with_user_backend_and_user(func):
-    def inner(self):
-        user_backend = self.generate_random_user_backend()
-        user = self.generate_random_user()
-        return func(self, user_backend, user)
-    return inner
-
-
 class UserBackendTestCase(TestCase):
-    def generate_random_user_backend(self):
-        r = object()
-        return base.UserBackend(r)
-
-    def generate_random_user(self):
-        return User.objects.create(username="some_random_user")
-
     def test_sets_backend_to_provided_value(self):
         random_object = object()
         user_backend = base.UserBackend(random_object)
         self.assertEqual(user_backend.backend, random_object)
 
-    @with_user_backend_and_user
-    def test_created_returns_none(self, user_backend, user):
-        self.assertNone(user_backend.created(user))
-
-    @with_user_backend_and_user
-    def test_updated_returns_none(self, user_backend, user):
-        self.assertNone(user_backend.updated(user))
-
-    @with_user_backend_and_user
-    def test_deleted_returns_none(self, user_backend, user):
-        self.assertNone(user_backend.deleted(user))
-
-
-def with_group_backend_and_group(func):
-    def inner(self):
-        return func(self, self.generate_random_group_backend(),
-                self.generate_random_group())
-    return inner
-
 
 class GroupBackendTestCase(TestCase):
-    def generate_random_group_backend(self):
-        r = object()
-        return base.GroupBackend(r)
-
-    def generate_random_group(self):
-        return Group.objects.create(name="foobar")
-
     def test_sets_backend_to_provided_value(self):
         random_object = object()
         group_backend = base.GroupBackend(random_object)
         self.assertEqual(group_backend.backend, random_object)
-
-    @with_group_backend_and_group
-    def test_updated_raises_none(self, group_backend, group):
-        self.assertNone(group_backend.updated(group))
-
-    @with_group_backend_and_group
-    def test_updated_raises_none(self, group_backend, group):
-        self.assertNone(group_backend.updated(group))
-
-    @with_group_backend_and_group
-    def test_deleted_raises_none(self, group_backend, group):
-        self.assertNone(group_backend.deleted(group))
 
 
 class ProfileBackendTestCase(TestCase):
