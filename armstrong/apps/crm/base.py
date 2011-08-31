@@ -78,13 +78,19 @@ class GroupBackend(BaseBackend):
         pass
 
 
+class ProfileBackend(BaseBackend):
+    pass
+
+
 class Backend(object):
     user_class = UserBackend
     group_class = GroupBackend
+    profile_class = ProfileBackend
 
     def __init__(self, *args, **kwargs):
         self._user = None
         self._group = None
+        self._profile = None
 
     def get_user(self):
         return self.user_class(self)
@@ -103,6 +109,15 @@ class Backend(object):
         if not self._group:
             self._group = self.get_group()
         return self._group
+
+    def get_profile(self):
+        return self.profile_class(self)
+
+    @property
+    def profile(self):
+        if not self._profile:
+            self._profile = self.get_profile()
+        return self._profile
 
 
 backend = GenericBackend("ARMSTRONG_CRM_BACKEND",

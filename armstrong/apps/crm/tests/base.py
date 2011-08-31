@@ -53,6 +53,19 @@ def fake_group_class(verify=True):
         yield (group_class, random_object)
 
 
+@contextmanager
+def fake_profile_class(verify=True):
+    random_object = object()
+    profile_class = fudge.Fake()
+    profile_class.is_callable().expects_call().times_called(1) \
+            .returns(random_object)
+    if verify:
+        with verified_mocks():
+            yield (profile_class, random_object)
+    else:
+        yield (profile_class, random_object)
+
+
 class BackendTestCase(TestCase):
     def test_returns_user_class_instance(self):
         with fake_user_class() as (user_class, random_object):
@@ -103,6 +116,31 @@ class BackendTestCase(TestCase):
     def test_provides_GroupBackend_by_default(self):
         b = base.Backend()
         self.assertIsA(b.group, base.GroupBackend)
+
+    def test_returns_profile_class_instance(self):
+        with fake_profile_class() as (profile_class, random_object):
+            b = base.Backend()
+            b.profile_class = profile_class
+            self.assertEqual(b.profile, random_object)
+
+    def test_only_instantiates_one_profile_backend(self):
+        with fake_profile_class() as (profile_class, random_object):
+            b = base.Backend()
+            b.profile_class = profile_class
+            b.profile
+            b.profile, "this will raise an error if not memoized"
+
+    def test_backend_is_passed_to_profile_backend(self):
+        with fake_profile_class(verify=False) as (profile_class, random_object):
+            b = base.Backend()
+            profile_class.with_args(b)
+            b.profile_class = profile_class
+            with verified_mocks():
+                b.profile, "make sure the backend was provide to the profile_class"
+
+    def test_provides_ProfileBackend_by_default(self):
+        b = base.Backend()
+        self.assertIsA(b.profile, base.ProfileBackend)
 
     def test_subclasses_can_control_what_user_class_is_used(self):
         class MySpecialUserBackend(base.UserBackend):
@@ -196,6 +234,13 @@ class GroupBackendTestCase(TestCase):
     @with_group_backend_and_group
     def test_deleted_raises_none(self, group_backend, group):
         self.assertNone(group_backend.deleted(group))
+
+
+class ProfileBackendTestCase(TestCase):
+    def test_sets_backend_to_provided_value(self):
+        random_object = object()
+        profile_backend = base.ProfileBackend(random_object)
+        self.assertEqual(profile_backend.backend, random_object)
 
 
 class RandomBackendForTesting(object):
