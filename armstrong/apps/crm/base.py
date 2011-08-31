@@ -133,16 +133,26 @@ def dispatch_user_registered(sender, **kwargs):
     get_backend().user.registered(user, **kwargs)
 
 
-def activate():
-    from django.db.models.signals import post_delete
+def connect_signals(signal, handler, *models):
+    for model in models:
+        signal.connect(handler, sender=model)
+
+
+def connect_post_save(*models):
     from django.db.models.signals import post_save
+    connect_signals(post_save, dispatch_post_save_signal, *models)
+
+
+def connect_post_delete(*models):
+    from django.db.models.signals import post_delete
+    connect_signals(post_delete, dispatch_delete_signal, *models)
+
+
+def activate():
     from django.contrib.auth.models import Group
     from django.contrib.auth.models import User
-    post_save.connect(dispatch_post_save_signal, sender=User)
-    post_save.connect(dispatch_post_save_signal, sender=Group)
-
-    post_delete.connect(dispatch_delete_signal, sender=User)
-    post_delete.connect(dispatch_delete_signal, sender=Group)
+    connect_post_save(User, Group)
+    connect_post_delete(User, Group)
 
     try:
         from registration.signals import user_activated
