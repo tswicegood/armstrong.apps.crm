@@ -161,7 +161,7 @@ class UserBackendTestCase(TestCase):
         self.assertNone(user_backend.updated(user))
 
     @with_user_backend_and_user
-    def test_deleted_rreturns_none(self, user_backend, user):
+    def test_deleted_returns_none(self, user_backend, user):
         self.assertNone(user_backend.deleted(user))
 
 
