@@ -4,3 +4,7 @@ from django.db import models
 
 class ProfileOne(models.Model):
 	user = models.ForeignKey(User)
+
+
+class ProfileTwo(models.Model):
+	user = models.ForeignKey(User)

@@ -1,4 +1,5 @@
 from armstrong.utils.backends import GenericBackend
+from django.db.models import get_model
 
 
 class BaseBackend(object):
@@ -183,7 +184,8 @@ def attempt_to_activate_profile_signals():
     if not getattr(settings, "AUTH_PROFILE_MODULE", False):
         return
 
-    from armstrong.apps.crm.tests.crm_support.models import ProfileOne
+    profile_model = get_model(*settings.AUTH_PROFILE_MODULE.split("."))
+
     def post_save_handler(sender, **kwargs):
         model = kwargs["instance"]
         created = kwargs.get("created", False)
@@ -194,8 +196,8 @@ def attempt_to_activate_profile_signals():
         get_backend().profile.deleted(model, **kwargs)
 
     from django.db.models.signals import post_save, post_delete
-    post_save.connect(post_save_handler, sender=ProfileOne, weak=False)
-    post_delete.connect(post_delete_handler, sender=ProfileOne, weak=False)
+    post_save.connect(post_save_handler, sender=profile_model, weak=False)
+    post_delete.connect(post_delete_handler, sender=profile_model, weak=False)
 
 def activate():
     from django.contrib.auth.models import Group

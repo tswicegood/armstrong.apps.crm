@@ -9,7 +9,7 @@ import unittest
 
 from armstrong.dev.tests.helpers import RestoreSignalReceivers
 from ._utils import TestCase
-from .crm_support.models import ProfileOne
+from .crm_support.models import ProfileOne, ProfileTwo
 
 try:
     from registration.backends import default as registration
@@ -265,8 +265,10 @@ class ReceivingSignalsTestCase(RestoreSignalReceivers, TestCase):
     def expected_group_payload(self, is_delete=False, is_create=False):
         return self.expected_django_payload(Group, is_delete=is_delete, is_create=is_create)
 
-    def expected_profile_payload(self, is_delete=False, is_create=False):
-        return self.expected_django_payload(ProfileOne, is_delete=is_delete, is_create=is_create)
+    def expected_profile_payload(self, profile_class=None, is_delete=False, is_create=False):
+        if not profile_class:
+            profile_class = ProfileOne
+        return self.expected_django_payload(profile_class, is_delete=is_delete, is_create=is_create)
 
     def expected_model(self, expected):
         def test(actual):
@@ -402,6 +404,19 @@ class ReceivingSignalsTestCase(RestoreSignalReceivers, TestCase):
 
                 msg = "fake would have raised an exception if this failed"
                 assert True, msg
+
+    def test_dispatches_profile_create_on_correct_model(self):
+        fake_create = fudge.Fake()
+        fake_create.is_callable().expects_call().with_args(
+                self.expected_model(ProfileTwo),
+                **self.expected_profile_payload(profile_class=ProfileTwo,
+                        is_create=True))
+        with fudge.patched_context(base.ProfileBackend, "created",
+                fake_create):
+            with self.settings(AUTH_PROFILE_MODULE="crm_support.ProfileTwo"):
+                base.activate()
+                alice = User.objects.create(username="alice")
+                ProfileTwo.objects.create(user=alice)
 
     def expected_registration_payload(self):
         return self.expected_payload(expected={
