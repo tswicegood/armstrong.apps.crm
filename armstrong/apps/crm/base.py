@@ -79,8 +79,14 @@ class GroupBackend(BaseBackend):
 
 
 class ProfileBackend(BaseBackend):
-    pass
+    def created(self, profile, **payload):
+        pass
 
+    def updated(self, profile, **payload):
+        pass
+
+    def deleted(self, profile, **payload):
+        pass
 
 class Backend(object):
     user_class = UserBackend
@@ -172,6 +178,20 @@ def attempt_django_registration():
     except ImportError:
         pass
 
+def attempt_to_activate_profile_signals():
+    from armstrong.apps.crm.tests.crm_support.models import ProfileOne
+    def post_save_handler(sender, **kwargs):
+        model = kwargs["instance"]
+        created = kwargs.get("created", False)
+        getattr(get_backend().profile, "created" if created else "updated")(model, **kwargs)
+
+    def post_delete_handler(sender, **kwargs):
+        model = kwargs["instance"]
+        get_backend().profile.deleted(model, **kwargs)
+
+    from django.db.models.signals import post_save, post_delete
+    post_save.connect(post_save_handler, sender=ProfileOne, weak=False)
+    post_delete.connect(post_delete_handler, sender=ProfileOne, weak=False)
 
 def activate():
     from django.contrib.auth.models import Group
@@ -180,3 +200,4 @@ def activate():
     connect_post_delete(User, Group)
 
     attempt_django_registration()
+    attempt_to_activate_profile_signals()

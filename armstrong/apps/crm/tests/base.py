@@ -7,6 +7,7 @@ import fudge
 from fudge.inspector import arg
 import unittest
 from ._utils import TestCase
+from .crm_support.models import ProfileOne
 
 try:
     from registration.backends import default as registration
@@ -253,6 +254,9 @@ class ReceivingSignalsTestCase(TestCase):
     def expected_group_payload(self, is_delete=False, is_create=False):
         return self.expected_django_payload(Group, is_delete=is_delete, is_create=is_create)
 
+    def expected_profile_payload(self, is_delete=False, is_create=False):
+        return self.expected_django_payload(ProfileOne, is_delete=is_delete, is_create=is_create)
+
     def expected_model(self, expected):
         def test(actual):
             self.assertIsA(actual, expected)
@@ -264,6 +268,9 @@ class ReceivingSignalsTestCase(TestCase):
 
     def expected_group_model(self):
         return self.expected_model(Group)
+
+    def expected_profile_model(self):
+        return self.expected_model(ProfileOne)
 
     def test_dispatches_user_create(self):
         fake_create = fudge.Fake()
@@ -319,6 +326,38 @@ class ReceivingSignalsTestCase(TestCase):
             g = Group.objects.create(name="foobar")
             g.delete()
 
+
+    def test_dispatches_profile_create(self):
+        fake_create = fudge.Fake()
+        fake_create.is_callable().expects_call().with_args(
+                self.expected_profile_model(),
+                **self.expected_profile_payload(is_create=True))
+        with fudge.patched_context(base.ProfileBackend, "created", fake_create):
+            alice = User.objects.create(username="alice")
+            ProfileOne.objects.create(user=alice)
+
+    def test_dispatches_profile_update(self):
+        fake_update = fudge.Fake()
+        fake_update.is_callable().expects_call().with_args(
+                self.expected_profile_model(),
+                **self.expected_profile_payload())
+        with fudge.patched_context(base.ProfileBackend, "updated", fake_update):
+            alice = User.objects.create(username="alice")
+            bob = User.objects.create(username="bob")
+
+            p = ProfileOne.objects.create(user=alice)
+            p.user = bob
+            p.save()
+
+    def test_dispatch_profile_delete(self):
+        fake_deleted = fudge.Fake()
+        fake_deleted.is_callable().expects_call().with_args(
+                self.expected_profile_model(),
+                **self.expected_profile_payload(is_delete=True))
+        with fudge.patched_context(base.ProfileBackend, "deleted", fake_deleted):
+            alice = User.objects.create(username="alice")
+            p = ProfileOne.objects.create(user=alice)
+            p.delete()
 
     def expected_registration_payload(self):
         return self.expected_payload(expected={
