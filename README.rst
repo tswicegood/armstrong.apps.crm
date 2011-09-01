@@ -104,6 +104,9 @@ then replace out the ``pass`` with the actual implementation.  You don't *have*
 to include each of these methods, they're defined in the super-class
 ``UserBackend``.
 
+
+Adding Group Support
+""""""""""""""""""""
 Our ``AwesomeCrmBackend`` can also handle modifications to ``Group`` models.
 You can add a ``group_class`` to the ``AwesomeCrmBackend`` class like this if
 you want to store them:
