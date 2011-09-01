@@ -80,14 +80,32 @@ class GroupBackend(BaseBackend):
 
 
 class ProfileBackend(BaseBackend):
+    """
+    Backend for handling profile events and sending them to the CRM.
+
+    Each method receives a ``profile`` representing the ``Profile`` model
+    that the action was performed on.  It also receives a ``**payload``
+    parameter that is all of the keyword arguments received by the signal.
+    """
+
     def created(self, profile, **payload):
+        """
+        Called when a new profile is created
+        """
         pass
 
     def updated(self, profile, **payload):
+        """
+        Called when a profile is updated
+        """
         pass
 
     def deleted(self, profile, **payload):
+        """
+        Called when a profile is deleted
+        """
         pass
+
 
 class Backend(object):
     user_class = UserBackend

@@ -153,6 +153,57 @@ Just like the ``AwesomeCrmUserBackend``, you need to modify each of the methods
 so they talk to your CRM of choice.
 
 
+Adding Profile Support
+""""""""""""""""""""""
+Just like Group support, you can handle changes to the configured profile model
+by adding a ``profile_class`` property to your backend object like this:
+
+::
+
+    class AwesomeCrmBackend(Backend):
+        user_class = AwesomeCrmUserBackend
+        group_class = AwesomeCrmGroupBackend
+        profile_class = AwesomeCrmProfileBackend
+
+Profile backends need to answer ``created``, ``updated``, and ``deleted`` like
+this:
+
+::
+
+    class AwesomeCrmProfileBackend(ProfileBackend):
+        """
+        Backend for handling profile events and sending them to the CRM.
+
+        Each method receives a ``profile`` representing the ``Profile`` model
+        that the action was performed on.  It also receives a ``**payload``
+        parameter that is all of the keyword arguments received by the signal.
+        """
+
+        def created(self, profile, **payload):
+            """
+            Called when a new profile is created
+            """
+            pass
+
+        def updated(self, profile, **payload):
+            """
+            Called when a profile is updated
+            """
+            pass
+
+        def deleted(self, profile, **payload):
+            """
+            Called when a profile is deleted
+            """
+            pass
+
+``armstrong.apps.crm`` determines which profile model to use based on the
+``AUTH_PROFILE_MODULE`` setting.  See `the documentation`_ for more information
+about how to set this value.
+
+.. _the documentation: https://docs.djangoproject.com/en/1.3/topics/auth/#auth-profiles
+
+
 Configuring
 -----------
 You must configure the backend you want to use with ``armstrong.apps.crm``.
