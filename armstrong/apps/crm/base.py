@@ -179,6 +179,10 @@ def attempt_django_registration():
         pass
 
 def attempt_to_activate_profile_signals():
+    from django.conf import settings
+    if not getattr(settings, "AUTH_PROFILE_MODULE", False):
+        return
+
     from armstrong.apps.crm.tests.crm_support.models import ProfileOne
     def post_save_handler(sender, **kwargs):
         model = kwargs["instance"]

@@ -6,6 +6,8 @@ from django.test.client import RequestFactory
 import fudge
 from fudge.inspector import arg
 import unittest
+
+from armstrong.dev.tests.helpers import RestoreSignalReceivers
 from ._utils import TestCase
 from .crm_support.models import ProfileOne
 
@@ -18,6 +20,12 @@ except ImportError:
     user_activated, user_registered = False, False
 
 from .. import base
+
+# set up list of signals that we want to restore
+from django.db.models.signals import post_save, post_delete
+SIGNALS = (post_save, post_delete)
+if user_activated:
+    SIGNALS += (user_activated, user_registered)
 
 
 @contextmanager
@@ -207,13 +215,16 @@ class get_backendTestCase(TestCase):
             self.assertIsA(b, RandomBackendForTesting)
 
 
-class ReceivingSignalsTestCase(TestCase):
+class ReceivingSignalsTestCase(RestoreSignalReceivers, TestCase):
+    watched_signals = SIGNALS
+
     def setUp(self):
         super(ReceivingSignalsTestCase, self).setUp()
         base.activate()
         fudge.clear_calls()
         fudge.clear_expectations()
         self.factory = RequestFactory()
+        self.original_signals = {}
 
     def tearDown(self):
         super(ReceivingSignalsTestCase, self).tearDown()
@@ -326,6 +337,11 @@ class ReceivingSignalsTestCase(TestCase):
             g = Group.objects.create(name="foobar")
             g.delete()
 
+    @contextmanager
+    def profile_configured(self):
+        with self.settings(AUTH_PROFILE_MODULE="crm_support.ProfileOne"):
+            base.activate()
+            yield
 
     def test_dispatches_profile_create(self):
         fake_create = fudge.Fake()
@@ -333,8 +349,9 @@ class ReceivingSignalsTestCase(TestCase):
                 self.expected_profile_model(),
                 **self.expected_profile_payload(is_create=True))
         with fudge.patched_context(base.ProfileBackend, "created", fake_create):
-            alice = User.objects.create(username="alice")
-            ProfileOne.objects.create(user=alice)
+            with self.profile_configured():
+                alice = User.objects.create(username="alice")
+                ProfileOne.objects.create(user=alice)
 
     def test_dispatches_profile_update(self):
         fake_update = fudge.Fake()
@@ -342,12 +359,13 @@ class ReceivingSignalsTestCase(TestCase):
                 self.expected_profile_model(),
                 **self.expected_profile_payload())
         with fudge.patched_context(base.ProfileBackend, "updated", fake_update):
-            alice = User.objects.create(username="alice")
-            bob = User.objects.create(username="bob")
+            with self.profile_configured():
+                alice = User.objects.create(username="alice")
+                bob = User.objects.create(username="bob")
 
-            p = ProfileOne.objects.create(user=alice)
-            p.user = bob
-            p.save()
+                p = ProfileOne.objects.create(user=alice)
+                p.user = bob
+                p.save()
 
     def test_dispatch_profile_delete(self):
         fake_deleted = fudge.Fake()
@@ -355,9 +373,35 @@ class ReceivingSignalsTestCase(TestCase):
                 self.expected_profile_model(),
                 **self.expected_profile_payload(is_delete=True))
         with fudge.patched_context(base.ProfileBackend, "deleted", fake_deleted):
-            alice = User.objects.create(username="alice")
-            p = ProfileOne.objects.create(user=alice)
-            p.delete()
+            with self.profile_configured():
+                alice = User.objects.create(username="alice")
+                p = ProfileOne.objects.create(user=alice)
+                p.delete()
+
+    @contextmanager
+    def uncallable_profile_backend(self):
+        fake = fudge.Fake()
+        with fudge.patched_context(base.ProfileBackend, "created", fake):
+            with fudge.patched_context(base.ProfileBackend, "updated", fake):
+                with fudge.patched_context(base.ProfileBackend, "deleted",
+                        fake):
+                    yield
+
+    def test_no_profile_events_are_fired_if_no_auth_profile_module(self):
+        with self.uncallable_profile_backend():
+            with self.settings(AUTH_PROFILE_MODULE=""):
+                base.activate()
+
+                alice = User.objects.create(username="alice")
+                bob = User.objects.create(username="bob")
+
+                p = ProfileOne.objects.create(user=alice)
+                p.user = bob
+                p.save()
+                p.delete()
+
+                msg = "fake would have raised an exception if this failed"
+                assert True, msg
 
     def expected_registration_payload(self):
         return self.expected_payload(expected={
