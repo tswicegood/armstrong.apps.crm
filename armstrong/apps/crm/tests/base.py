@@ -237,8 +237,8 @@ class ReceivingSignalsTestCase(TestCase):
                 payload[key] = arg.any()
         return payload
 
-    def expected_user_payload(self, is_delete=False, is_create=False):
-        payload = {"instance": User, "signal": None, "using": None,
+    def expected_django_payload(self, model_class, is_delete=False, is_create=False):
+        payload = {"instance": model_class, "signal": None, "using": None,
                    "created": is_create, }
         if not is_delete:
             payload["raw"] = None
@@ -246,14 +246,12 @@ class ReceivingSignalsTestCase(TestCase):
             del payload["created"]
         return self.expected_payload(payload)
 
+
+    def expected_user_payload(self, is_delete=False, is_create=False):
+        return self.expected_django_payload(User, is_delete=is_delete, is_create=is_create)
+
     def expected_group_payload(self, is_delete=False, is_create=False):
-        payload = {"instance": Group, "signal": None, "using": None,
-                   "created": is_create, }
-        if not is_delete:
-            payload["raw"] = None
-        else:
-            del payload["created"]
-        return self.expected_payload(payload)
+        return self.expected_django_payload(Group, is_delete=is_delete, is_create=is_create)
 
     def expected_model(self, expected):
         def test(actual):
