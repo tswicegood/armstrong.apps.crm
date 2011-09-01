@@ -180,6 +180,7 @@ def attempt_django_registration():
         pass
 
 def attempt_to_activate_profile_signals():
+    # TODO: add support for idios
     from django.conf import settings
     if not getattr(settings, "AUTH_PROFILE_MODULE", False):
         return
@@ -207,3 +208,4 @@ def activate():
 
     attempt_django_registration()
     attempt_to_activate_profile_signals()
+    # TODO: add support for configurable model registration
