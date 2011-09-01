@@ -213,6 +213,15 @@ called ``mysite.crm``).
 
     ARMSTRONG_CRM_BACKEND = "mysite.crm.Backend"
 
+The last thing you need to do is activate the CRM app.  This wires up all of
+the signals.  You do this by adding this line to your ``urls`` file:
+
+::
+
+    from armstrong.apps import crm
+    crm.activate()
+
+
 That's it.  All of signals are wired up.  Whenever an event happens that your
 CRM code needs to know about, it will be invoked.
 
